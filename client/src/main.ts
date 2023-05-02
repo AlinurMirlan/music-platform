@@ -9,9 +9,3 @@ const app = createApp(App);
 app.use(pinia);
 app.use(router);
 app.mount('#app');
-
-watch(pinia.state, (state) => {
-    localStorage.setItem("account", JSON.stringify(state.account));
-}, {
-    deep: true
-})

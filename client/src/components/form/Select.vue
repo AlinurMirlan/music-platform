@@ -15,7 +15,7 @@ defineEmits(['update:modelValue']);
             :id="label"
             @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
         >
-            <option v-for="option in options" :selected="option[1]">{{ option[0].name }}</option>
+            <option v-for="option in options" :selected="option[1]" :value="option[0].value" >{{ option[0].name }}</option>
         </select>
     </div>
 </template>

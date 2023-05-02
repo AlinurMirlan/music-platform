@@ -5,9 +5,9 @@ import z from 'zod';
 import ErrorMessage from '@/components/form/ErrorMessage.vue';
 import { getConfiguredAxios } from '@/assets/axios.js';
 import { useAccountStore } from '@/stores/account';
-import type { JwtRaw } from '@/assets/types/types.js';
+import type { UserCedentials } from '@/assets/types/types.js';
 import { formatErrors } from '@/assets/errorFormatter';
-import { useUserErrors } from '@/composables/userErrors';
+import { useShapeErrors } from '@/composables/userErrors';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 
@@ -20,14 +20,14 @@ const userSchema = z.object({
     email: z.string().email(),
     password: z.string().min(8, { message: 'Password must be at least 8 characters long' })
 });
-const { user, errors } = useUserErrors<typeof userSchema>({
+const { shape, errors } = useShapeErrors<typeof userSchema>({
     email: '',
     password: ''
 });
 
 // METHODS
 async function onFormSubmit() {
-    const result = userSchema.safeParse(user);
+    const result = userSchema.safeParse(shape);
     if (result.success) {
     } else {
         errors.value = result.error.flatten().fieldErrors;
@@ -35,7 +35,7 @@ async function onFormSubmit() {
     }
 
     try {
-        const response = await axiosBase.post<JwtRaw>('/account/login', user);
+        const response = await axiosBase.post<UserCedentials>('/account/login', shape);
         accountStore.setJwt(response.data);
         router.push(accountStore.getRedirect());
     } catch (error) {
@@ -59,13 +59,19 @@ async function onFormSubmit() {
 <template>
     <main>
         <form class="max-w-lg mx-auto mt-6">
-            <InputField class="mt-4" name="Email" type="email" v-model="user.email" />
+            <InputField class="mt-4" name="Email" type="email" v-model="shape.email" />
             <ErrorMessage v-if="errors?.email" :message="formatErrors(errors.email)" />
 
-            <InputField class="mt-4" name="Password" type="password" v-model="user.password" />
-            <ErrorMessage v-if="errors?.password" :message="formatErrors(errors.password)"/>
+            <InputField class="mt-4" name="Password" type="password" v-model="shape.password" />
+            <ErrorMessage v-if="errors?.password" :message="formatErrors(errors.password)" />
 
-            <Button class="mt-4 block" name="Sign in" @click="onFormSubmit()" />
+            <div class="flex justify-between mt-4">
+                <Button class="block" name="Sign in" @click="onFormSubmit()" />
+                <p class="">
+                    Don't have an account?<br>
+                    <router-link class="text-green-500" :to="{ name: 'userRegister' }">Register</router-link>
+                </p>
+            </div>
         </form>
     </main>
 </template>

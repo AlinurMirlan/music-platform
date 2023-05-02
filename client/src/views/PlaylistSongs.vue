@@ -6,20 +6,19 @@ import MusicCard from '@/components/MusicCard.vue';
 import LoadSpinner from '@/components/LoadSpinner.vue';
 import Select from '@/components/Select.vue';
 import { onMounted, reactive, ref } from 'vue';
-import type { Genre, Song, PagedSongs, Page } from '@/assets/types/types.js';
+import type { Genre, Song, PlaylistSong, Page, PagedEntities, PlaylistSongRaw } from '@/assets/types/types.js';
 import { useAccountStore } from '@/stores/account';
-import { useSongStore } from '@/stores/song';
 import { getJwtConfiguredAxios } from '@/assets/axios.js';
-import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
 
 const router = useRouter();
 const route = useRoute();
 const accountStore = useAccountStore();
-const songStore = useSongStore();
 const axios = getJwtConfiguredAxios(accountStore.jwt.token);
-type OrderByProperties = 'Popularity' | 'ReleaseDate';
+type OrderByProperties = 'Popularity' | 'ReleaseDate' | 'DateTimeAdded';
 type orderByDescending = 'true' | 'false';
 const props = defineProps<{
+    playlistId: number;
     page: number;
     search: {
         term?: string;
@@ -30,7 +29,7 @@ const props = defineProps<{
 const search = {
     gennreIds: ref<number[]>([]),
     term: ref<string>(''),
-    orderByProperty: ref<OrderByProperties>('Popularity'),
+    orderByProperty: ref<OrderByProperties>('DateTimeAdded'),
     orderByDescending: ref<orderByDescending>('true')
 };
 const genreDialog = ref<HTMLDialogElement | null>(null);
@@ -42,13 +41,7 @@ const page: Page = reactive({
     pageSize: 6,
     totalPages: -1
 });
-const musicCardOptions = [
-    {name: 'Add to playlist', emitName: 'click-add-to-playlist'}
-];
-if (accountStore.isAdmin) {
-    musicCardOptions.push({ name: 'Delete song', emitName: 'click-delete-song' });
-    musicCardOptions.push({ name: 'Edit song', emitName: 'click-edit-song' });
-}
+const isOwner = ref<boolean>(false);
 
 function onDialogReset() {
     search.gennreIds.value = [];
@@ -67,42 +60,28 @@ function onGenreChecked(genre: Genre) {
         search.gennreIds.value.push(genre.id);
     }
 }
-async function setSongsAndImages(rawSongs: Song[]) {
+async function setSongsAndImages(rawPlaylistSongs: PlaylistSongRaw[]) {
     // On a note: array.forEach() doesn't wait for an async operation to finish.
-    for (const song of rawSongs) {
+    const playlistSongs: Song[] = [];
+    for (const playlistSong of rawPlaylistSongs) {
         try {
-            const response = await axios.get(`/music/image/${song.id}`, { responseType: 'blob' });
+            const response = await axios.get(`/music/image/${playlistSong.song.id}`, { responseType: 'blob' });
             const blob = response.data;
-            song.imageFile = URL.createObjectURL(blob);
+            playlistSong.song.imageFile = URL.createObjectURL(blob);
+            playlistSongs.push(playlistSong.song);
         } catch (error) {
             console.log(error);
         }
     }
 
-    songs.value = rawSongs;
-}
-async function searchSong() {
-    changePage(1);
-}
-function changePage(newPage: number) {
-    router.push({
-        name: 'recommendations',
-        query: {
-            searchTerm: search.term.value,
-            orderBy: search.orderByProperty.value,
-            descending: search.orderByDescending.value
-        },
-        params: {
-            page: newPage
-        }
-    });
+    songs.value = playlistSongs;
 }
 async function loadSongs(): Promise<Page | null> {
     songs.value.length = 0;
     let pageInfo: Page | null = null;
     try {
-        let response = await axios.get<PagedSongs>(
-            `/music/${encodeURIComponent(search.term.value)}`,
+        let response = await axios.get<PagedEntities<PlaylistSongRaw>>(
+            `/music/playlist/${encodeURIComponent(props.playlistId)}/${encodeURIComponent(search.term.value)}`,
             {
                 params: {
                     genreIds: search.gennreIds.value,
@@ -137,32 +116,38 @@ async function getGenres() {
         console.log(error);
     }
 }
-function onAddToPlaylist(song: Song) {
-    router.push({ name: "playlists", query: { songId: song.id, returnUrl: route.fullPath } });
-}
-async function onDeleteSong(song: Song) {
-    if (!accountStore.isAdmin) {
+async function onRemoveFromPlaylist(song: Song) {
+    if (!accountStore.isAdmin && !isOwner.value) {
         return;
     }
 
+    const playlistSong: PlaylistSong = {
+        songId: song.id,
+        playlistId: props.playlistId
+    };
     try {
-        await axios.post("music/song/delete", null, {
-            params: {
-                songId: song.id
-            }
-        });
+        await axios.post("music/playlist/remove/song", playlistSong);
     } catch (error) {
         console.log(error);
     }
 
-    router.go(0);
+    router.push(route.fullPath);
 }
-function onEditSong(song: Song) {
-    accountStore.redirectPath = route.fullPath;
-    songStore.song = song;
-    router.push({ name: "editSong", params: {
-        songId: song.id
-    }});
+async function searchSong() {
+    changePage(1);
+}
+function changePage(newPage: number) {
+    router.push({
+        name: 'playlistSongs',
+        query: {
+            searchTerm: search.term.value,
+            orderBy: search.orderByProperty.value,
+            descending: search.orderByDescending.value
+        },
+        params: {
+            page: newPage
+        }
+    });
 }
 
 onMounted(async () => {
@@ -175,13 +160,21 @@ onMounted(async () => {
     await getGenres();
     await setPagedSongs();
     loading.value = false;
+
+    try {
+        const response = await axios.get<boolean>('music/playlist/belongs/to/user', {
+            params: {
+                userId: accountStore.userId,
+                playlistId: props.playlistId
+            }
+        });
+        isOwner.value = response.data;
+    } catch (error) {
+        console.log(error);
+        return;
+    }
 });
 onBeforeRouteUpdate(async (to, from) => {
-    search.term.value = to.query.searchTerm as string || '';
-    search.orderByDescending.value = to.query.descending as orderByDescending ?? 'true';
-    if (to.query.orderBy) {
-        search.orderByProperty.value = to.query.orderBy as OrderByProperties;
-    }
     page.currentPage = Number(to.params.page || 1);
     loading.value = true;
     await setPagedSongs();
@@ -245,8 +238,9 @@ onBeforeRouteUpdate(async (to, from) => {
                     <Select
                         v-model="search.orderByProperty.value"
                         :options="[
-                            [{ name: 'Popularity', value: 'Popularity' }, true],
-                            [{ name: 'Release date', value: 'ReleaseDate' }, false]
+                            [{ name: 'Popularity', value: 'Popularity' }, false],
+                            [{ name: 'Release date', value: 'ReleaseDate' }, false],
+                            [{ name: 'Addition Date', value: 'DateTimeAdded' }, true]
                         ]"
                         class="pl-1"
                     />
@@ -266,14 +260,14 @@ onBeforeRouteUpdate(async (to, from) => {
             <LoadSpinner v-if="loading" />
             <!-- Recommended songs -->
             <div class="flex flex-row flex-wrap gap-2">
-                <MusicCard :options="musicCardOptions" 
+                <MusicCard :options="[
+                    {name: 'Remove from playlist', emitName: 'click-remove-from-playlist'}
+                ]" 
                 v-for="song in songs" :song="song"
-                @click-add-to-playlist="onAddToPlaylist(song)"
-                @click-delete-song="onDeleteSong(song)"
-                @click-edit-song="onEditSong(song)" />
+                @click-remove-from-playlist="onRemoveFromPlaylist(song)" />
             </div>
             <Pagination
-                route-name="recommendations"
+                route-name="playlistSongs"
                 :page="page"
                 :query="{ 
                     searchTerm: search.term.value,

@@ -1,50 +1,60 @@
 import { Jwt } from '@/assets/classes';
-import type { JwtRaw } from '@/assets/types/types';
+import type { UserCedentials } from '@/assets/types/types';
 import { defineStore } from 'pinia';
 
 interface State {
-    redirectPath: string,
-    jwt: Jwt
+    redirectPath: string;
+    jwt: Jwt;
+    userId: string;
+    isAdmin: boolean | null;
 }
 interface StateRaw {
-    redirectPath: string,
-    jwt: { [P in keyof Jwt]: string }
+    redirectPath: string;
+    jwt: { [P in keyof Jwt]: string };
+    userId: string;
+    isAdmin: boolean;
 }
 
 export const useAccountStore = defineStore('account', {
     state: (): State => {
-        let accountState = localStorage.getItem("account");
+        let accountState = localStorage.getItem('account');
         if (accountState) {
             const accountRaw: StateRaw = JSON.parse(accountState);
             const account: State = {
+                ...accountRaw,
                 jwt: {
                     token: accountRaw.jwt.token,
                     expiration: new Date(Date.parse(accountRaw.jwt.expiration))
-                },
-                redirectPath: accountRaw.redirectPath
-            }
+                }
+            };
             return account;
         }
         return {
-            redirectPath: "",
+            redirectPath: '',
             jwt: {
-                token: "",
+                token: '',
                 expiration: new Date()
-            }
-        }
+            },
+            isAdmin: false,
+            userId: ''
+        };
     },
     getters: {
-        isAuthenticated: (state) => state.jwt.token !== "" && state.jwt.expiration > new Date()
+        isAuthenticated: (state) => state.jwt.token !== '' && state.jwt.expiration > new Date(),
+        isAdminGet: (state) => state.isAdmin
     },
     actions: {
-        setJwt(jwtRaw: JwtRaw) {
+        setJwt(jwtRaw: UserCedentials) {
             this.jwt = new Jwt(jwtRaw);
+            this.userId = jwtRaw.userId;
+            this.isAdmin = jwtRaw.isAdmin;
+            localStorage.setItem('account', JSON.stringify(this.$state));
         },
         getRedirect() {
-            let redirect = "/";
+            let redirect = '/recommendations';
             if (this.redirectPath) {
                 redirect = this.redirectPath;
-                this.redirectPath = "";
+                this.redirectPath = '';
             }
             return redirect;
         }

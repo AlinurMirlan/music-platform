@@ -6,43 +6,49 @@ import z from 'zod';
 import ErrorMessage from '@/components/form/ErrorMessage.vue';
 import { useAccountStore } from '@/stores/account';
 import { getJwtConfiguredAxios } from '@/assets/axios.js';
-import type { JwtRaw } from '@/assets/types/types.js';
+import type { UserCedentials } from '@/assets/types/types.js';
 import { formatErrors } from '@/assets/errorFormatter';
-import { useUserErrors } from '@/composables/userErrors';
+import { useShapeErrors } from '@/composables/userErrors';
 import { useRouter } from 'vue-router';
 
 // STATE
 const router = useRouter();
 const accountStore = useAccountStore();
 const axios = getJwtConfiguredAxios(accountStore.jwt.token);
+const nonAlphanumericRegex = /[^a-zA-Z0-9]/;
+const uppercaseRegex = /[A-Z]/;
+const lowercaseRegex = /[a-z]/;
 let userSchema = z
     .object({
         email: z.string().email(),
-        password: z.string().min(8, { message: 'Password must be at least 8 characters long' }),
+        password: z.string().min(8, { message: 'Password must be at least 8 characters long' })
+            .regex(nonAlphanumericRegex, 'Password must contain at least one non-alphanumeric character')
+            .regex(uppercaseRegex, 'Password must contain at least one uppercase letter')
+            .regex(lowercaseRegex, 'Password must contain at least one lowercase letter'),
         confirmPassword: z
             .string()
             .min(8, { message: 'Password must be at least 8 characters long' }),
         name: z.string().min(1, { message: 'Name must contain at least 1 character' }),
         age: z.number().gt(0).lt(120).nullable(),
-        sex: z.enum(['Male', 'Female', 'Unknown'])
+        sex: z.enum(['m', 'f', 'u'])
     })
     .refine((schema) => schema.password === schema.confirmPassword, {
         message: 'Passwords do not match',
         path: ['confirmPassword']
     });
 
-const { user, errors } = useUserErrors<typeof userSchema>({
+const { shape, errors } = useShapeErrors<typeof userSchema>({
     email: '',
     password: '',
     confirmPassword: '',
     name: '',
     age: null,
-    sex: 'Unknown'
+    sex: 'u'
 });
 
 // METHODS
 async function onFormSubmit() {
-    const result = userSchema.safeParse(user);
+    const result = userSchema.safeParse(shape);
     if (!result.success) {
         errors.value = result.error.flatten().fieldErrors;
         if (!errors.value.email) {
@@ -55,18 +61,19 @@ async function onFormSubmit() {
         return;
     }
 
-    const { confirmPassword, ...userDto } = user;
+    const { confirmPassword, ...userDto } = shape;
     try {
-        const response = await axios.post<JwtRaw>('/account/register', userDto);
+        const response = await axios.post<UserCedentials>('/account/register', userDto);
         accountStore.setJwt(response.data);
     } catch (error) {
         console.log(error);
     }
 
-    router.push(accountStore.getRedirect());
+    const redirect = accountStore.getRedirect();
+    router.push(redirect);
 }
 async function setEmailErrorIfItsAlreadyInUse() {
-    const doesExist = await doesEmailExist(user.email);
+    const doesExist = await doesEmailExist(shape.email);
     if (doesExist) {
         errors.value.email = ['Email is already taken'];
     }
@@ -87,31 +94,31 @@ async function doesEmailExist(email: string) {
 <template>
     <main>
         <form class="max-w-lg mx-auto mt-6">
-            <InputField class="mt-4" name="Email" type="email" v-model="user.email" />
+            <InputField class="mt-4" name="Email" type="email" v-model="shape.email" />
             <ErrorMessage v-if="errors.email" :message="formatErrors(errors.email)" />
 
-            <InputField class="mt-4" name="Password" type="password" v-model="user.password" />
+            <InputField class="mt-4" name="Password" type="password" v-model="shape.password" />
             <ErrorMessage v-if="errors.password" :message="formatErrors(errors.password)" />
             <InputField
                 class="mt-4"
                 name="Confirm Password"
                 placeholder="Password"
                 type="password"
-                v-model="user.confirmPassword"
+                v-model="shape.confirmPassword"
             />
             <ErrorMessage
                 v-if="errors?.confirmPassword"
                 :message="formatErrors(errors.confirmPassword)"
             />
 
-            <InputField class="mt-4" name="Name" type="text" v-model="user.name" />
+            <InputField class="mt-4" name="Name" type="text" v-model="shape.name" />
             <ErrorMessage v-if="errors.name" :message="formatErrors(errors.name)" />
 
-            <InputField class="mt-4" name="Age" type="number" v-model.number="user.age" />
+            <InputField class="mt-4" name="Age" type="number" v-model.number="shape.age" />
             <ErrorMessage v-if="errors.age" :message="formatErrors(errors.age)" />
 
             <Select
-                v-model="user.sex"
+                v-model="shape.sex"
                 class="mt-4"
                 :options="[
                     [{ name: 'Male', value: 'm' }, false],
@@ -120,7 +127,14 @@ async function doesEmailExist(email: string) {
                 ]"
                 label="Sex"
             />
-            <Button class="mt-4" name="Sign in" @click="onFormSubmit()" />
+
+            <div class="flex justify-between mt-4">
+                <Button class="" name="Sign in" @click="onFormSubmit()" />
+                <p class="">
+                    Have an account?<br>
+                    <router-link class="text-green-500" :to="{ name: 'userLogin' }">Log in</router-link>
+                </p>
+            </div>
         </form>
     </main>
 </template>
