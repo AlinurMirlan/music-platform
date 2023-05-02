@@ -7,6 +7,8 @@ using MusicPlatformApi.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using MusicPlatformApi.Data.Triggers;
+using MusicPlatformApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 IConfiguration config = builder.Configuration;
@@ -24,7 +26,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<MusicDbInitializer>();
-builder.Services.AddDbContext<MusicContext>((options) => options.UseSqlServer(config.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<MusicContext>(options =>
+{
+    options.UseSqlServer(config.GetConnectionString("DefaultConnection"));
+    options.UseTriggers(builder =>
+    {
+        builder.AddTrigger<SetSongSignature>();
+    });
+});
 builder.Services.AddIdentity<User, IdentityRole>((options) =>
 {
     options.User.RequireUniqueEmail = true;
@@ -46,6 +55,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(securityKey))
     };
 });
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"));
+});
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 builder.Services.AddScoped<IMusicRepository, MusicRepository>();
 builder.Services.AddTransient<IJwtTokenRepository, JwtTokenRepository>();
@@ -57,6 +70,12 @@ builder.Services.AddCors(options =>
         builder.AllowAnyMethod();
         builder.AllowAnyHeader();
     });
+});
+builder.Services.AddTransient<FileHandler>((_) =>
+{
+    string imagesBasePath = config["Folder:SongImages"] ?? throw new InvalidOperationException("Base folder for song images is not initialized.");
+    string songsBasePath = config["Folder:Songs"] ?? throw new InvalidOperationException("Base folder for songs is not initialized.");
+    return new FileHandler(imagesBasePath, songsBasePath);
 });
 
 var app = builder.Build();

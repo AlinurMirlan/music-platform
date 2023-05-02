@@ -12,8 +12,6 @@ namespace MusicPlatformApi.Data.Entities
 
         public required string Name { get; set; }
 
-        public List<UserSong> Favorites { get; set; } = new();
-
         public List<Playlist> Playlists { get; set; } = new();
     }
 }

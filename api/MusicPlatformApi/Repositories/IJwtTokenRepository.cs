@@ -5,6 +5,6 @@ namespace MusicPlatformApi.Repositories
 {
     public interface IJwtTokenRepository
     {
-        public JwtModel CreateJwt(User user);
+        public CredentialModel CreateJwt(User user);
     }
 }

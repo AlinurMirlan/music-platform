@@ -27,6 +27,7 @@ namespace MusicPlatformApi.Infrastructure
             LinkedList<Song> songs = new();
             Dictionary<string, Author> authors = new();
             Dictionary<string, Genre> genres = new();
+            Dictionary<string, Album> albums = new();
             while (csvReader.Read())
             {
                 Song song = new()
@@ -34,9 +35,6 @@ namespace MusicPlatformApi.Infrastructure
                     Title = string.IsNullOrEmpty(csvReader[0])
                         ? throw new InvalidOperationException($"{nameof(Song.Title)} cannot be empty.")
                         : csvReader[0]!.Trim(),
-                    Album = string.IsNullOrEmpty(csvReader[2])
-                        ? throw new InvalidOperationException($"{nameof(Song.Album)} cannot be empty.")
-                        : csvReader[2]!.Trim(),
                     ImageFile = string.IsNullOrEmpty(csvReader[3])
                         ? throw new InvalidOperationException($"{nameof(Song.ImageFile)} cannot be empty.")
                         : csvReader[3]!.Trim(),
@@ -55,6 +53,17 @@ namespace MusicPlatformApi.Infrastructure
 
                 if (string.IsNullOrEmpty(csvReader[5]))
                     throw new InvalidOperationException($"{nameof(Song.Genres)} cannot be empty.");
+
+                string? albumName = csvReader[2];
+                if (albumName is not null)
+                {
+                    if (!albums.ContainsKey(albumName))
+                    {
+                        Album album = new() { Name = albumName };
+                        albums.Add(albumName, album);
+                    }
+                    song.Album = albums[albumName];
+                }
 
                 string[] authorNames = csvReader[1]!.Split(',');
                 song.Authors = new List<Author>(authorNames.Length);

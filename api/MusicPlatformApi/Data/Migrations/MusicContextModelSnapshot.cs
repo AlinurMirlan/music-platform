@@ -22,6 +22,36 @@ namespace MusicPlatformApi.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("AuthorSong", b =>
+                {
+                    b.Property<int>("AuthorsId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SongsId")
+                        .HasColumnType("int");
+
+                    b.HasKey("AuthorsId", "SongsId");
+
+                    b.HasIndex("SongsId");
+
+                    b.ToTable("AuthorSong");
+                });
+
+            modelBuilder.Entity("GenreSong", b =>
+                {
+                    b.Property<int>("GenresId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SongId")
+                        .HasColumnType("int");
+
+                    b.HasKey("GenresId", "SongId");
+
+                    b.HasIndex("SongId");
+
+                    b.ToTable("GenreSong");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -155,6 +185,23 @@ namespace MusicPlatformApi.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("MusicPlatformApi.Data.Entities.Album", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Albums");
+                });
+
             modelBuilder.Entity("MusicPlatformApi.Data.Entities.Author", b =>
                 {
                     b.Property<int>("Id")
@@ -219,18 +266,18 @@ namespace MusicPlatformApi.Data.Migrations
 
             modelBuilder.Entity("MusicPlatformApi.Data.Entities.PlaylistSong", b =>
                 {
-                    b.Property<int>("PlaylistId")
+                    b.Property<int>("SongId")
                         .HasColumnType("int");
 
-                    b.Property<int>("SongId")
+                    b.Property<int>("PlaylistId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("DateTimeAdded")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("PlaylistId", "SongId");
+                    b.HasKey("SongId", "PlaylistId");
 
-                    b.HasIndex("SongId");
+                    b.HasIndex("PlaylistId");
 
                     b.ToTable("PlaylistSongs");
                 });
@@ -243,47 +290,8 @@ namespace MusicPlatformApi.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Album")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ImageFile")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Popularity")
+                    b.Property<int?>("AlbumId")
                         .HasColumnType("int");
-
-                    b.Property<DateTime>("ReleaseDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("SongFile")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Title", "Album");
-
-                    b.ToTable("Songs");
-                });
-
-            modelBuilder.Entity("MusicPlatformApi.Data.Entities.SongLookup", b =>
-                {
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Album")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("GenreIds")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ImageFile")
                         .IsRequired()
@@ -296,7 +304,6 @@ namespace MusicPlatformApi.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Signature")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SongFile")
@@ -305,13 +312,15 @@ namespace MusicPlatformApi.Data.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
-                    b.ToTable((string)null);
+                    b.HasIndex("AlbumId");
 
-                    b.ToView("SongLookup", (string)null);
+                    b.HasIndex("Title");
+
+                    b.ToTable("Songs");
                 });
 
             modelBuilder.Entity("MusicPlatformApi.Data.Entities.User", b =>
@@ -390,52 +399,34 @@ namespace MusicPlatformApi.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("MusicPlatformApi.Data.Entities.UserSong", b =>
+            modelBuilder.Entity("AuthorSong", b =>
                 {
-                    b.Property<int>("SongId")
-                        .HasColumnType("int");
+                    b.HasOne("MusicPlatformApi.Data.Entities.Author", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("DateTimeAdded")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("SongId", "UserId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UserSong");
+                    b.HasOne("MusicPlatformApi.Data.Entities.Song", null)
+                        .WithMany()
+                        .HasForeignKey("SongsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
-            modelBuilder.Entity("SongAuthor", b =>
+            modelBuilder.Entity("GenreSong", b =>
                 {
-                    b.Property<int>("SongsId")
-                        .HasColumnType("int");
+                    b.HasOne("MusicPlatformApi.Data.Entities.Genre", null)
+                        .WithMany()
+                        .HasForeignKey("GenresId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Property<int>("AuthorsId")
-                        .HasColumnType("int");
-
-                    b.HasKey("SongsId", "AuthorsId");
-
-                    b.HasIndex("AuthorsId");
-
-                    b.ToTable("SongAuthor");
-                });
-
-            modelBuilder.Entity("SongGenre", b =>
-                {
-                    b.Property<int>("SongsId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("GenresId")
-                        .HasColumnType("int");
-
-                    b.HasKey("SongsId", "GenresId");
-
-                    b.HasIndex("GenresId");
-
-                    b.ToTable("SongGenre");
+                    b.HasOne("MusicPlatformApi.Data.Entities.Song", null)
+                        .WithMany()
+                        .HasForeignKey("SongId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -519,65 +510,18 @@ namespace MusicPlatformApi.Data.Migrations
                     b.Navigation("Song");
                 });
 
-            modelBuilder.Entity("MusicPlatformApi.Data.Entities.UserSong", b =>
+            modelBuilder.Entity("MusicPlatformApi.Data.Entities.Song", b =>
                 {
-                    b.HasOne("MusicPlatformApi.Data.Entities.Song", "Song")
-                        .WithMany()
-                        .HasForeignKey("SongId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("MusicPlatformApi.Data.Entities.Album", "Album")
+                        .WithMany("Songs")
+                        .HasForeignKey("AlbumId");
 
-                    b.HasOne("MusicPlatformApi.Data.Entities.User", "User")
-                        .WithMany("Favorites")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Song");
-
-                    b.Navigation("User");
+                    b.Navigation("Album");
                 });
 
-            modelBuilder.Entity("SongAuthor", b =>
+            modelBuilder.Entity("MusicPlatformApi.Data.Entities.Album", b =>
                 {
-                    b.HasOne("MusicPlatformApi.Data.Entities.Author", null)
-                        .WithMany()
-                        .HasForeignKey("AuthorsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MusicPlatformApi.Data.Entities.Song", null)
-                        .WithMany()
-                        .HasForeignKey("SongsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MusicPlatformApi.Data.Entities.SongLookup", null)
-                        .WithMany()
-                        .HasForeignKey("SongsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("SongGenre", b =>
-                {
-                    b.HasOne("MusicPlatformApi.Data.Entities.Genre", null)
-                        .WithMany()
-                        .HasForeignKey("GenresId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MusicPlatformApi.Data.Entities.Song", null)
-                        .WithMany()
-                        .HasForeignKey("SongsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MusicPlatformApi.Data.Entities.SongLookup", null)
-                        .WithMany()
-                        .HasForeignKey("SongsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Songs");
                 });
 
             modelBuilder.Entity("MusicPlatformApi.Data.Entities.Playlist", b =>
@@ -587,8 +531,6 @@ namespace MusicPlatformApi.Data.Migrations
 
             modelBuilder.Entity("MusicPlatformApi.Data.Entities.User", b =>
                 {
-                    b.Navigation("Favorites");
-
                     b.Navigation("Playlists");
                 });
 #pragma warning restore 612, 618

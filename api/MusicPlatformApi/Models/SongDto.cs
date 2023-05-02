@@ -13,11 +13,11 @@ namespace MusicPlatformApi.Models
 
         public List<AuthorDto> Authors { get; set; } = new();
 
-        public required string Album { get; set; }
+        public AlbumDto? Album { get; set; }
 
         public List<Genre> Genres { get; set; } = new();
 
-        public required DateTime ReleaseDate { get; set; }
+        public DateTime ReleaseDate { get; set; } = DateTime.Now;
 
         public int Popularity { get; set; }
     }

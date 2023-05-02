@@ -4,10 +4,16 @@ namespace MusicPlatformApi.Models
 {
     public class CredentialModel
     {
-        [EmailAddress]
-        public required string Email { get; set; }
+        public string Jwt { get; set; }
+        public DateTime Expiration { get; set; }
+        public string UserId { get; set; }
+        public bool IsAdmin { get; set; } = false;
 
-        [MinLength(8)]
-        public required string Password { get; set; }
+        public CredentialModel(string jwt, DateTime expiration, string userId)
+        {
+            UserId = userId;
+            Jwt = jwt;
+            Expiration = expiration;
+        }
     }
-}
+}   

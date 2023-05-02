@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MusicPlatformApi.Data.Entities
 {
-    [Index(nameof(Title), nameof(Album))]
+    [Index(nameof(Title))]
     public class Song
     {
         public int Id { get; set; }
@@ -13,8 +13,9 @@ namespace MusicPlatformApi.Data.Entities
 
         public List<Author> Authors { get; set; } = new();
 
-        [Column(TypeName = "nvarchar(50)")]
-        public required string Album { get; set; }
+        public int? AlbumId { get; set; }
+
+        public Album? Album { get; set; }
 
         public required string ImageFile { get; set; }
 
@@ -22,8 +23,10 @@ namespace MusicPlatformApi.Data.Entities
 
         public List<Genre> Genres { get; set; } = new();
 
-        public DateTime ReleaseDate { get; set; }
+        public DateTime ReleaseDate { get; set; } = DateTime.Now;
 
         public int Popularity { get; set; }
+
+        public string? Signature { get; set; }
     }
 }

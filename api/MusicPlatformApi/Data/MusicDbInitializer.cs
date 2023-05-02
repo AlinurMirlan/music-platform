@@ -14,14 +14,18 @@ namespace MusicPlatformApi.Data
         private readonly MusicContext _context;
         private readonly ILogger<MusicDbInitializer> _logger;
         private readonly UserManager<User> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IWebHostEnvironment _environment;
+        private readonly IConfiguration _config;
 
-        public MusicDbInitializer(MusicContext context, ILogger<MusicDbInitializer> logger, UserManager<User> userManager, IWebHostEnvironment environment)
+        public MusicDbInitializer(MusicContext context, ILogger<MusicDbInitializer> logger, UserManager<User> userManager, RoleManager<IdentityRole> roleManager, IWebHostEnvironment environment, IConfiguration config)
         {
             _context = context;
             _logger = logger;
             _userManager = userManager;
+            _roleManager = roleManager;
             _environment = environment;
+            _config = config;
         }
 
         public async Task SeedAsync()
@@ -29,7 +33,7 @@ namespace MusicPlatformApi.Data
             await _context.Database.MigrateAsync();
 
             if (!_userManager.Users.Any())
-            {
+            {   
                 User user = new()
                 {
                     Name = "Alinur",
@@ -46,6 +50,16 @@ namespace MusicPlatformApi.Data
                 result = await _userManager.AddPasswordAsync(user, "P@ssw0rd?");
                 if (!result.Succeeded)
                     throw new InvalidOperationException("Failed to set password while seeding database.");
+
+                string adminRoleString = _config["Security:Roles:Admin"] ?? throw new InvalidOperationException("Admin Role is not set up.");
+                IdentityRole role = new(adminRoleString);
+                result = await _roleManager.CreateAsync(role);
+                if (!result.Succeeded)
+                    throw new InvalidOperationException("Failed to create the Admin role while seeding database.");
+
+                result = await _userManager.AddToRoleAsync(user, adminRoleString);
+                if (!result.Succeeded)
+                    throw new InvalidOperationException("Failed to add the Admin role to the dummy account while seeding database.");
             }
 
             if (!_context.Songs.Any())

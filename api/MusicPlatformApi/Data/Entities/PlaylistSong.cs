@@ -1,18 +1,19 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MusicPlatformApi.Data.Entities
 {
-    [PrimaryKey(nameof(PlaylistId), nameof(SongId))]
+    [PrimaryKey(nameof(SongId), nameof(PlaylistId))]
     public class PlaylistSong
     {
-        public int PlaylistId { get; set; }
-
-        public required Playlist Playlist { get; set; }
-
         public int SongId { get; set; }
 
-        public required Song Song { get; set; }
+        public int PlaylistId { get; set; }
 
-        public DateTime DateTimeAdded { get; set; }
+        public Song? Song { get; set; }
+
+        public Playlist? Playlist { get; set; }
+
+        public DateTime DateTimeAdded { get; set; } = DateTime.Now;
     }
 }

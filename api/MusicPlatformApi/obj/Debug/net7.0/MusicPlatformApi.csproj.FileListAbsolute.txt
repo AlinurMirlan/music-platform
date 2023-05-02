@@ -84,3 +84,5 @@ C:\Alinur\university-work\corporate-app-development\2nd-lab\api\MusicPlatformApi
 C:\Alinur\university-work\corporate-app-development\2nd-lab\api\MusicPlatformApi\obj\Debug\net7.0\MusicPlatformApi.pdb
 C:\Alinur\university-work\corporate-app-development\2nd-lab\api\MusicPlatformApi\obj\Debug\net7.0\MusicPlatformApi.genruntimeconfig.cache
 C:\Alinur\university-work\corporate-app-development\2nd-lab\api\MusicPlatformApi\obj\Debug\net7.0\ref\MusicPlatformApi.dll
+C:\Alinur\university-work\corporate-app-development\2nd-lab\api\MusicPlatformApi\bin\Debug\net7.0\EntityFrameworkCore.Triggered.dll
+C:\Alinur\university-work\corporate-app-development\2nd-lab\api\MusicPlatformApi\bin\Debug\net7.0\EntityFrameworkCore.Triggered.Abstractions.dll

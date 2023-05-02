@@ -16,7 +16,7 @@ namespace MusicPlatformApi.Repositories
             _config = config;
         }
 
-        public JwtModel CreateJwt(User user)
+        public CredentialModel CreateJwt(User user)
         {
             // a Claim is just a piece of information about the consumer in the form of a key-value pair.
             Claim[] claims =
@@ -48,7 +48,7 @@ namespace MusicPlatformApi.Repositories
             
             // Serializing the JWT. Thus getting the actual thing {header.payload.S1gn@tur3}
             string jwt = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
-            return new JwtModel(jwt, expiration);
+            return new CredentialModel(jwt, expiration, user.Id);
         }
     }
 }

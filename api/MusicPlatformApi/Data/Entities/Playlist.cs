@@ -8,10 +8,10 @@
 
         public required string UserId { get; set; }
 
-        public required User User { get; set; }
-
-        public DateTime DateTimeAdded { get; set; }
+        public User? User { get; set; }
 
         public List<PlaylistSong> Songs { get; set; } = new();
+
+        public DateTime DateTimeAdded { get; set; } = DateTime.Now;
     }
 }
