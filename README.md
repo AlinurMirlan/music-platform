@@ -11,3 +11,6 @@
 Аутентификационные данные админа:
 * Email: alinur@gmail.com
 * Password: P@ssw0rd?
+
+### Использованные технологии
+Vue, TypeScript, Vite, ASP.NET Core API, EF Core
